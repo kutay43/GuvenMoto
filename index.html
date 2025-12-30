@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GÜVEN MOTO</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            dark: '#0f172a', 
+                            primary: '#f97316'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #f8fafc; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .kanban-col { min-height: 500px; background: #f1f5f9; border-radius: 12px; padding: 12px; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased h-screen flex flex-col overflow-hidden">
+
+    <!-- TOAST BİLDİRİM -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[200] space-y-3"></div>
+
+    <!-- ========================================== -->
+    <!-- 1. LANDING SCREEN (Giriş Seçimi)       -->
+    <!-- ========================================== -->
+    <div id="screen-landing" class="fixed inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center p-4">
+        <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=2070')] bg-cover bg-center opacity-20 pointer-events-none"></div>
+        
+        <div class="relative z-10 text-center space-y-8 max-w-5xl w-full fade-in">
+            <div class="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-tr from-orange-500 to-red-600 rounded-2xl shadow-2xl mb-4">
+                <i class="fa-solid fa-motorcycle text-white text-4xl"></i>
+            </div>
+            
+            <div>
+                <h1 class="text-5xl md:text-6xl font-extrabold text-white tracking-tight mb-2">GÜVEN <span class="text-orange-500">MOTO</span></h1>
+                <p class="text-slate-400 text-lg">MOTOSİKLET SERVİS</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl mx-auto mt-12">
+                <!-- Müşteri Randevu -->
+                <button onclick="openCustomerPortal()" class="group bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 p-6 rounded-2xl transition-all hover:-translate-y-2 text-left">
+                    <div class="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center text-white text-xl mb-4">
+                        <i class="fa-solid fa-calendar-check"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-1">Randevu Al</h3>
+                    <p class="text-slate-300 text-sm">Servis talebi oluşturun.</p>
+                </button>
+
+                <!-- Müşteri Durum Sorgulama -->
+                <button onclick="openStatusCheck()" class="group bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 p-6 rounded-2xl transition-all hover:-translate-y-2 text-left">
+                    <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center text-white text-xl mb-4">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-1">Motorum Ne Durumda?</h3>
+                    <p class="text-slate-300 text-sm">Durum ve ücret sorgula.</p>
+                </button>
+
+                <!-- Admin -->
+                <button onclick="checkAdminSession()" class="group bg-slate-800/80 hover:bg-slate-800 backdrop-blur-md border border-slate-700 p-6 rounded-2xl transition-all hover:-translate-y-2 text-left">
+                    <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white text-xl mb-4">
+                        <i class="fa-solid fa-user-gear"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-1">Yönetici Paneli</h3>
+                    <p class="text-slate-400 text-sm">Personel girişi.</p>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 2. MÜŞTERİ: RANDEVU PORTALI            -->
+    <!-- ========================================== -->
+    <div id="screen-customer" class="fixed inset-0 z-[90] bg-slate-50 overflow-y-auto hidden">
+        <div class="max-w-2xl mx-auto min-h-screen flex flex-col p-4 md:p-8 justify-center">
+            <button onclick="returnToLanding()" class="absolute top-8 left-8 text-slate-500 hover:text-slate-800 font-bold flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left"></i> Geri Dön
+            </button>
+            
+            <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200 fade-in">
+                <div class="bg-slate-900 p-8 text-center">
+                    <i class="fa-solid fa-wrench text-5xl text-orange-500 mb-4"></i>
+                    <h2 class="text-3xl font-bold text-white">Online Randevu</h2>
+                </div>
+                <form onsubmit="submitCustomerRequest(event)" class="p-8 space-y-5">
+                    <div class="grid grid-cols-2 gap-4">
+                        <input id="c-plate" type="text" placeholder="PLAKA (34 AB 123)" class="w-full p-3 border rounded-xl font-bold uppercase" required>
+                        <input id="c-model" type="text" placeholder="Model (Örn: PCX)" class="w-full p-3 border rounded-xl" required>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <input id="c-name" type="text" placeholder="Ad Soyad" class="w-full p-3 border rounded-xl" required>
+                        <input id="c-phone" type="tel" placeholder="Telefon" class="w-full p-3 border rounded-xl" required>
+                    </div>
+                    <textarea id="c-issue" rows="4" placeholder="Şikayetiniz veya talebiniz nedir?" class="w-full p-3 border rounded-xl" required></textarea>
+                    <button type="submit" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl shadow-lg transition">Randevu Talebini Gönder</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 3. MÜŞTERİ: DURUM SORGULAMA            -->
+    <!-- ========================================== -->
+    <div id="screen-status" class="fixed inset-0 z-[90] bg-slate-50 overflow-y-auto hidden">
+        <div class="max-w-md mx-auto min-h-screen flex flex-col p-4 justify-center">
+            <button onclick="returnToLanding()" class="absolute top-8 left-8 text-slate-500 hover:text-slate-800 font-bold flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left"></i> Geri Dön
+            </button>
+
+            <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200 fade-in text-center p-8">
+                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600 text-3xl">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Motorum Ne Durumda?</h2>
+                <div class="flex gap-2 mb-6">
+                    <input type="text" id="status-plate" placeholder="34 ABC 123" class="w-full p-3 border rounded-xl font-bold uppercase text-center text-lg">
+                    <button onclick="checkStatus()" class="bg-slate-800 text-white px-6 rounded-xl hover:bg-slate-900"><i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+                <div id="status-result" class="hidden text-left bg-slate-50 p-5 rounded-xl border border-slate-100"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 4. ADMIN PANELİ                        -->
+    <!-- ========================================== -->
+    <div id="screen-admin" class="fixed inset-0 z-[80] flex overflow-hidden hidden bg-slate-50">
+        <!-- Sidebar -->
+        <aside class="w-20 lg:w-64 bg-brand-dark text-white flex flex-col transition-all duration-300 z-20 shadow-xl flex-shrink-0">
+            <div class="h-20 flex items-center justify-center lg:justify-start lg:px-6 border-b border-slate-700/50">
+                <div class="w-10 h-10 bg-gradient-to-tr from-orange-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fa-solid fa-bolt text-white text-xl"></i>
+                </div>
+                <div class="hidden lg:block ml-3">
+                    <h1 class="font-bold text-lg leading-tight">TITANIUM</h1>
+                    <p class="text-[10px] text-slate-400 tracking-widest uppercase">V11 Robust</p>
+                </div>
+            </div>
+            <nav class="flex-1 py-6 px-3 space-y-2 overflow-y-auto">
+                <button onclick="router('dashboard')" class="nav-btn w-full flex items-center p-3 rounded-xl hover:bg-white/10 text-slate-300 transition group active-nav bg-orange-600 text-white shadow-lg">
+                    <i class="fa-solid fa-chart-pie text-xl w-8 text-center"></i><span class="hidden lg:block font-medium">Genel Bakış</span>
+                </button>
+                <button onclick="router('kanban')" class="nav-btn w-full flex items-center p-3 rounded-xl hover:bg-white/10 text-slate-300 transition group">
+                    <i class="fa-solid fa-table-columns text-xl w-8 text-center"></i><span class="hidden lg:block font-medium">İş Takip</span>
+                </button>
+                <button onclick="router('requests')" class="nav-btn w-full flex items-center p-3 rounded-xl hover:bg-white/10 text-slate-300 transition group relative">
+                    <div class="relative w-8 text-center">
+                        <i class="fa-solid fa-inbox text-xl"></i>
+                        <span id="nav-badge" class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-brand-dark rounded-full hidden"></span>
+                    </div>
+                    <span class="hidden lg:block font-medium">Talepler</span>
+                </button>
+                <button onclick="router('inventory')" class="nav-btn w-full flex items-center p-3 rounded-xl hover:bg-white/10 text-slate-300 transition group">
+                    <i class="fa-solid fa-boxes-stacked text-xl w-8 text-center"></i><span class="hidden lg:block font-medium">Stok & Depo</span>
+                </button>
+                <button onclick="router('settings')" class="nav-btn w-full flex items-center p-3 rounded-xl hover:bg-white/10 text-slate-300 transition group mt-8">
+                    <i class="fa-solid fa-gear text-xl w-8 text-center"></i><span class="hidden lg:block font-medium">Yedekleme</span>
+                </button>
+            </nav>
+            <div class="p-4 border-t border-slate-700/50">
+                <button onclick="logoutAdmin()" class="flex items-center gap-2 text-slate-400 hover:text-red-400 w-full p-2">
+                    <i class="fa-solid fa-power-off"></i> <span class="hidden lg:inline">Güvenli Çıkış</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col relative overflow-hidden">
+            <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-10 shadow-sm">
+                <h2 id="page-title" class="text-2xl font-bold text-slate-800">Genel Bakış</h2>
+                <button onclick="newJobModal()" class="px-5 py-2 bg-brand-primary hover:bg-orange-700 text-white rounded-lg font-bold shadow-lg shadow-orange-500/30 transition transform active:scale-95">
+                    <i class="fa-solid fa-plus"></i> Yeni İş Emri
+                </button>
+            </header>
+
+            <div id="content-area" class="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8 space-y-8">
+                <!-- DASHBOARD VIEW -->
+                <div id="view-dashboard" class="page-view animate-fade">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                            <p class="text-xs font-bold text-slate-500 uppercase">Toplam Ciro</p>
+                            <h3 class="text-3xl font-extrabold text-slate-800 mt-2" id="dash-revenue">0 ₺</h3>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                            <p class="text-xs font-bold text-slate-500 uppercase">Aktif İşler</p>
+                            <h3 class="text-3xl font-extrabold text-blue-600 mt-2" id="dash-active">0</h3>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                            <p class="text-xs font-bold text-slate-500 uppercase">Bekleyen</p>
+                            <h3 class="text-3xl font-extrabold text-orange-600 mt-2" id="dash-pending">0</h3>
+                        </div>
+                         <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                            <p class="text-xs font-bold text-slate-500 uppercase">Biten</p>
+                            <h3 class="text-3xl font-extrabold text-green-600 mt-2" id="dash-completed">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm mt-6">
+                         <canvas id="revenueChart" height="100"></canvas>
+                    </div>
+                </div>
+
+                <!-- KANBAN VIEW -->
+                <div id="view-kanban" class="page-view hidden h-full overflow-x-auto">
+                    <div class="flex gap-6 min-w-[1200px] pb-4">
+                        <div class="flex-1 kanban-col" id="col-pending" data-status="pending"></div>
+                        <div class="flex-1 kanban-col" id="col-in-progress" data-status="in-progress"></div>
+                        <div class="flex-1 kanban-col" id="col-ready" data-status="ready"></div>
+                        <div class="flex-1 kanban-col" id="col-completed" data-status="completed"></div>
+                    </div>
+                </div>
+
+                <!-- REQUESTS VIEW -->
+                <div id="view-requests" class="page-view hidden grid grid-cols-1 gap-4">
+                    <div id="requests-container"></div>
+                </div>
+
+                <!-- INVENTORY VIEW -->
+                <div id="view-inventory" class="page-view hidden">
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="font-bold">Parça Stokları</h3>
+                            <button onclick="addStockItem()" class="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold">+ Yeni Stok Kartı</button>
+                        </div>
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-slate-500 font-bold">
+                                <tr><th class="p-3">Parça Adı</th><th class="p-3">Stok</th><th class="p-3">Fiyat</th><th class="p-3">İşlem</th></tr>
+                            </thead>
+                            <tbody id="inventory-table-body" class="divide-y"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SETTINGS VIEW -->
+                <div id="view-settings" class="page-view hidden">
+                    <div class="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm text-center max-w-2xl mx-auto">
+                        <h3 class="text-xl font-bold mb-4">Veri Yedekleme Merkezi</h3>
+                        <p class="text-slate-500 mb-6">Verileriniz tarayıcınızda güvende. Ancak bilgisayar değişikliği veya sıfırlama durumuna karşı düzenli olarak yedek dosyasını indirin.</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <button onclick="downloadBackup()" class="bg-slate-900 text-white px-6 py-4 rounded-xl font-bold hover:bg-slate-800 transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-download"></i> Yedek Dosyası İndir
+                            </button>
+                            <label class="bg-white border-2 border-slate-200 text-slate-600 px-6 py-4 rounded-xl font-bold hover:bg-slate-50 transition cursor-pointer flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-upload"></i> Yedek Yükle
+                                <input type="file" id="backup-file" class="hidden" onchange="restoreBackup(this)">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- İŞ DETAY MODALI -->
+    <div id="modal-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-[150] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-5xl max-h-[95vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-fade">
+            <div class="p-5 border-b flex justify-between items-center bg-slate-50">
+                <h3 class="font-bold text-xl text-slate-800">İş Emri Detay</h3>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-white border hover:bg-red-50 hover:text-red-500"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div id="modal-content" class="p-6 overflow-y-auto flex-1 bg-slate-50/50"></div>
+        </div>
+    </div>
+
+    <!-- LOGIN MODAL -->
+    <div id="modal-login" class="fixed inset-0 bg-slate-900/80 hidden z-[200] flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+            <h3 class="text-xl font-bold mb-4">Yönetici Şifresi</h3>
+            <input type="password" id="admin-pass" class="w-full p-3 border rounded-xl mb-4 text-center text-lg" placeholder="••••">
+            <button onclick="performLogin()" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold">Giriş</button>
+            <button onclick="closeLoginModal()" class="mt-4 text-slate-400 text-sm">İptal</button>
+        </div>
+    </div>
+
+    <script>
+        // --- GÜVENLİ VERİTABANI BAŞLANGICI ---
+        // BU ANAHTAR ASLA DEĞİŞMEMELİ VEYA SİLİNMELİ
+        const DB_KEY = 'guvenMotor_V11_Final'; 
+        let db = { jobs: [], inventory: [] };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            // Veriyi güvenli yükle
+            try {
+                const stored = localStorage.getItem(DB_KEY);
+                if (stored && stored !== "undefined" && stored !== "null") {
+                    const parsed = JSON.parse(stored);
+                    db.jobs = Array.isArray(parsed.jobs) ? parsed.jobs : [];
+                    db.inventory = Array.isArray(parsed.inventory) ? parsed.inventory : [];
+                } else {
+                    // İlk açılış - Örnek Veri
+                    db = { 
+                        jobs: [], 
+                        inventory: [
+                            {id: 1, name: 'Motor Yağı (Castrol)', stock: 20, price: 350},
+                            {id: 2, name: 'Hava Filtresi', stock: 15, price: 200}
+                        ] 
+                    };
+                    saveDB();
+                }
+            } catch (err) {
+                console.error("Veri hatası:", err);
+                if(!db.jobs) db.jobs = []; // Kurtarma
+            }
+
+            // Oturum Kontrolü
+            if(localStorage.getItem('isAdminLoggedIn') === 'true') {
+                showAdminPanel();
+            } else {
+                document.getElementById('screen-landing').classList.remove('hidden');
+            }
+            updateBadge();
+        });
+
+        // Veri Kaydetme
+        function saveDB() {
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            updateBadge();
+        }
+
+        // --- AUTH & NAV ---
+        function checkAdminSession() {
+            if(localStorage.getItem('isAdminLoggedIn') === 'true') showAdminPanel();
+            else document.getElementById('modal-login').classList.remove('hidden');
+        }
+        function performLogin() {
+            if(document.getElementById('admin-pass').value === '1234') {
+                localStorage.setItem('isAdminLoggedIn', 'true');
+                document.getElementById('modal-login').classList.add('hidden');
+                showAdminPanel();
+            } else alert('Hatalı Şifre!');
+        }
+        
+        // KRİTİK: Sadece oturumu kapatır, veriye dokunmaz
+        function logoutAdmin() {
+            localStorage.removeItem('isAdminLoggedIn'); 
+            location.reload();
+        }
+        
+        function closeLoginModal() { document.getElementById('modal-login').classList.add('hidden'); }
+
+        function showAdminPanel() {
+            document.getElementById('screen-landing').classList.add('hidden');
+            document.getElementById('screen-admin').classList.remove('hidden');
+            router('dashboard');
+        }
+        function openCustomerPortal() {
+            document.getElementById('screen-landing').classList.add('hidden');
+            document.getElementById('screen-customer').classList.remove('hidden');
+        }
+        function openStatusCheck() {
+            document.getElementById('screen-landing').classList.add('hidden');
+            document.getElementById('screen-status').classList.remove('hidden');
+        }
+        function returnToLanding() {
+            document.getElementById('screen-customer').classList.add('hidden');
+            document.getElementById('screen-status').classList.add('hidden');
+            document.getElementById('screen-landing').classList.remove('hidden');
+        }
+        function router(viewId) {
+            document.querySelectorAll('.page-view').forEach(el => el.classList.add('hidden'));
+            document.getElementById('view-' + viewId).classList.remove('hidden');
+            const titles = {dashboard:'Genel Bakış', kanban:'İş Takip', requests:'Talepler', inventory:'Stok', settings:'Yedekleme'};
+            document.getElementById('page-title').innerText = titles[viewId] || 'Panel';
+            
+            if(viewId==='dashboard') renderDashboard();
+            if(viewId==='kanban') renderKanban();
+            if(viewId==='requests') renderRequests();
+            if(viewId==='inventory') renderInventory();
+        }
+
+        // --- MÜŞTERİ İŞLEMLERİ ---
+        function submitCustomerRequest(e) {
+            e.preventDefault();
+            db.jobs.push({
+                id: Date.now(), status: 'request', date: new Date().toLocaleDateString('tr-TR'),
+                plate: document.getElementById('c-plate').value.toUpperCase().trim(),
+                model: document.getElementById('c-model').value,
+                customer: document.getElementById('c-name').value,
+                phone: document.getElementById('c-phone').value,
+                issue: document.getElementById('c-issue').value,
+                parts: [], labor: 0
+            });
+            saveDB();
+            alert('Talebiniz alınmıştır!');
+            returnToLanding();
+        }
+
+        function checkStatus() {
+            const plate = document.getElementById('status-plate').value.toUpperCase().trim().replace(/\s+/g, '');
+            const resultDiv = document.getElementById('status-result');
+            resultDiv.classList.remove('hidden');
+            
+            const job = db.jobs.find(j => j.plate.replace(/\s+/g, '') === plate && j.status !== 'completed');
+            
+            if(job) {
+                const total = (job.labor||0) + (job.parts?.reduce((a,b)=>a+b.price,0)||0);
+                let statusText = job.status === 'ready' ? 'TESLİME HAZIR' : 'İŞLEMDE/SIRADA';
+                let color = job.status === 'ready' ? 'text-green-600' : 'text-orange-500';
+
+                resultDiv.innerHTML = `
+                    <div class="border-b pb-3 mb-3">
+                        <h3 class="font-bold text-lg">${job.model}</h3>
+                        <p class="text-sm text-slate-500">${job.customer}</p>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-sm font-bold text-slate-400 uppercase">DURUM</p>
+                        <p class="${color} font-bold text-xl">${statusText}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-slate-400 uppercase">TUTAR</p>
+                        <p class="text-2xl font-extrabold text-slate-800">${total} ₺</p>
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `<p class="text-red-500 font-bold">Kayıt bulunamadı. Lütfen plakayı kontrol edin.</p>`;
+            }
+        }
+
+        // --- İŞ DETAYI ---
+        function openDetail(id) {
+            const j = db.jobs.find(x => x.id === id);
+            const modal = document.getElementById('modal-overlay');
+            const content = document.getElementById('modal-content');
+            
+            // Stok seçenekleri
+            const stockOptionsHTML = db.inventory.map(i => `<option value="${i.id}" data-price="${i.price}">${i.name} (Stok: ${i.stock})</option>`).join('');
+            
+            const partsHTML = (j.parts||[]).map((p,idx) => `
+                <div class="flex items-center gap-2 mb-2 p-2 bg-white border rounded shadow-sm">
+                    <div class="flex-1 font-medium text-sm">${p.name}</div>
+                    <input type="number" value="${p.price}" onchange="updatePartPrice(${id},${idx},this.value)" class="w-24 p-1 border rounded text-right font-bold">
+                    <span class="text-sm font-bold text-slate-500">₺</span>
+                    <button onclick="removePart(${id},${idx})" class="text-red-400 hover:text-red-600 ml-2"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            `).join('');
+
+            const total = (j.labor||0) + (j.parts?.reduce((a,b)=>a+b.price,0)||0);
+            
+            // WhatsApp Link
+            const cleanPhone = j.phone ? j.phone.replace(/[^0-9]/g, '') : '';
+            const wpText = `Sayın ${j.customer || 'Müşteri'}, ${j.plate} plakalı motosikletinizin işlemleri tamamlanmıştır. Toplam tutar: ${total} TL. Teslim alabilirsiniz.`;
+            const wpLink = cleanPhone ? `https://wa.me/90${cleanPhone.slice(-10)}?text=${encodeURIComponent(wpText)}` : '#';
+
+            content.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+                    <div class="lg:col-span-1 space-y-4">
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                            <h4 class="font-bold text-slate-700 border-b pb-2 mb-3">Müşteri & Araç</h4>
+                            <label class="block text-xs text-slate-500 font-bold mb-1">PLAKA</label>
+                            <input id="d-plate" value="${j.plate}" class="w-full p-2 border rounded mb-2 font-bold uppercase">
+                            
+                            <label class="block text-xs text-slate-500 font-bold mb-1">MARKA/MODEL</label>
+                            <input id="d-model" value="${j.model}" class="w-full p-2 border rounded mb-2">
+                            
+                            <label class="block text-xs text-slate-500 font-bold mb-1">MÜŞTERİ ADI</label>
+                            <input id="d-customer" value="${j.customer}" class="w-full p-2 border rounded mb-2">
+                            
+                            <label class="block text-xs text-slate-500 font-bold mb-1">TELEFON</label>
+                            <input id="d-phone" value="${j.phone}" class="w-full p-2 border rounded">
+                            
+                            <!-- WhatsApp Butonu -->
+                            ${cleanPhone ? `<a href="${wpLink}" target="_blank" class="flex items-center justify-center gap-2 mt-3 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded transition"><i class="fa-brands fa-whatsapp text-lg"></i> Mesaj Gönder</a>` : ''}
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                            <h4 class="font-bold text-slate-700 border-b pb-2 mb-3">Şikayet</h4>
+                            <textarea id="d-issue" class="w-full p-2 border rounded h-24 text-sm">${j.issue}</textarea>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                             <label class="text-xs font-bold text-slate-400">DURUM</label>
+                             <select id="d-status" class="w-full p-2 border rounded bg-slate-50 font-bold">
+                                <option value="pending" ${j.status==='pending'?'selected':''}>Bekliyor</option>
+                                <option value="in-progress" ${j.status==='in-progress'?'selected':''}>İşlemde</option>
+                                <option value="ready" ${j.status==='ready'?'selected':''}>Hazır</option>
+                                <option value="completed" ${j.status==='completed'?'selected':''}>Tamamlandı</option>
+                             </select>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-2 space-y-4 flex flex-col">
+                        <div class="bg-orange-50 p-5 rounded-xl border border-orange-100 shadow-inner">
+                            <h4 class="font-bold text-orange-800 mb-3">Parça & Hizmet Ekle</h4>
+                            
+                            <div class="flex gap-2 mb-4 items-end">
+                                <div class="flex-1">
+                                    <label class="text-xs font-bold text-orange-700">Stoktan Seç</label>
+                                    <select id="add-stock-id" class="w-full p-2 border rounded text-sm" onchange="fillPrice(this)">
+                                        <option value="">Seçiniz...</option>
+                                        ${stockOptionsHTML}
+                                    </select>
+                                </div>
+                                <div class="w-24">
+                                    <label class="text-xs font-bold text-orange-700">Fiyat</label>
+                                    <input type="number" id="add-stock-price" class="w-full p-2 border rounded text-sm font-bold">
+                                </div>
+                                <button onclick="addPartToJob(${id}, 'stock')" class="bg-orange-600 text-white px-4 py-2 rounded font-bold hover:bg-orange-700">Ekle</button>
+                            </div>
+
+                            <div class="text-center text-xs text-orange-400 font-bold mb-2">- VEYA ELLE GİR -</div>
+
+                            <div class="flex gap-2 items-end">
+                                <div class="flex-1">
+                                    <label class="text-xs font-bold text-slate-500">Parça Adı</label>
+                                    <input type="text" id="add-manual-name" class="w-full p-2 border rounded text-sm" placeholder="Örn: Özel Vida">
+                                </div>
+                                <div class="w-24">
+                                    <label class="text-xs font-bold text-slate-500">Fiyat</label>
+                                    <input type="number" id="add-manual-price" class="w-full p-2 border rounded text-sm font-bold">
+                                </div>
+                                <button onclick="addPartToJob(${id}, 'manual')" class="bg-slate-700 text-white px-4 py-2 rounded font-bold hover:bg-slate-800">Ekle</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 flex-1 overflow-y-auto min-h-[150px]">
+                            ${partsHTML}
+                        </div>
+
+                        <div class="bg-slate-800 text-white p-5 rounded-xl shadow-lg">
+                            <div class="flex justify-between items-center mb-3">
+                                <label class="font-bold">İşçilik Ücreti</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" id="d-labor" value="${j.labor || 0}" class="w-32 p-2 rounded text-slate-800 font-bold text-right text-lg border-none outline-none focus:ring-2 ring-orange-500">
+                                    <span class="font-bold">₺</span>
+                                </div>
+                            </div>
+                            <div class="border-t border-slate-600 pt-3 flex justify-between items-center">
+                                <span class="text-lg font-light text-slate-300">GENEL TOPLAM</span>
+                                <span class="text-3xl font-extrabold text-orange-500">${total} ₺</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200">
+                    <button onclick="deleteJob(${id})" class="px-4 py-3 text-red-500 hover:bg-red-50 rounded-lg font-bold">Sil</button>
+                    <!-- FİŞ YAZDIR BUTONU (Popup Method) -->
+                    <button onclick="printInvoicePopup(${id})" class="px-6 py-3 border border-slate-300 rounded-lg font-bold hover:bg-slate-50">Fiş Yazdır</button>
+                    <button onclick="saveJob(${id})" class="px-8 py-3 bg-brand-primary text-white rounded-lg font-bold hover:bg-orange-700 shadow-lg">Kaydet</button>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        // --- HELPER FUNC ---
+        function fillPrice(sel) {
+            document.getElementById('add-stock-price').value = sel.options[sel.selectedIndex].getAttribute('data-price') || '';
+        }
+
+        function addPartToJob(jobId, type) {
+            const job = db.jobs.find(j => j.id === jobId);
+            let name, price;
+
+            if(type === 'stock') {
+                const stockId = parseInt(document.getElementById('add-stock-id').value);
+                const stockItem = db.inventory.find(i => i.id === stockId);
+                if(!stockItem || stockItem.stock <= 0) return alert('Stokta yok!');
+                name = stockItem.name;
+                price = Number(document.getElementById('add-stock-price').value);
+                stockItem.stock--; 
+            } else {
+                name = document.getElementById('add-manual-name').value;
+                price = Number(document.getElementById('add-manual-price').value);
+                if(!name) return alert('İsim girin');
+            }
+            
+            if(!job.parts) job.parts = [];
+            job.parts.push({name, price});
+            saveDB();
+            openDetail(jobId);
+        }
+
+        function updatePartPrice(jobId, idx, val) {
+            db.jobs.find(j => j.id === jobId).parts[idx].price = Number(val);
+            saveDB();
+        }
+        function removePart(jobId, idx) {
+            db.jobs.find(j => j.id === jobId).parts.splice(idx, 1);
+            saveDB();
+            openDetail(jobId);
+        }
+        function saveJob(id) {
+            const j = db.jobs.find(x => x.id === id);
+            j.plate = document.getElementById('d-plate').value.toUpperCase();
+            j.model = document.getElementById('d-model').value; // Model kaydediliyor
+            j.customer = document.getElementById('d-customer').value;
+            j.phone = document.getElementById('d-phone').value;
+            j.issue = document.getElementById('d-issue').value;
+            j.status = document.getElementById('d-status').value;
+            j.labor = Number(document.getElementById('d-labor').value);
+            saveDB();
+            closeModal();
+            router('kanban');
+            showToast('Kayıt Güncellendi!');
+        }
+        function deleteJob(id) {
+            if(confirm('Silinecek?')) {
+                db.jobs = db.jobs.filter(x => x.id !== id);
+                saveDB();
+                closeModal();
+                router('kanban');
+            }
+        }
+        function closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); }
+
+        // --- DASHBOARD/KANBAN RENDERING ---
+        function renderDashboard() {
+            const total = db.jobs.reduce((a,b)=>a+(b.labor||0)+(b.parts?.reduce((x,y)=>x+y.price,0)||0),0);
+            document.getElementById('dash-revenue').innerText = total + ' ₺';
+            document.getElementById('dash-active').innerText = db.jobs.filter(j=>['pending','in-progress','ready'].includes(j.status)).length;
+            document.getElementById('dash-pending').innerText = db.jobs.filter(j=>j.status==='request').length;
+            document.getElementById('dash-completed').innerText = db.jobs.filter(j=>j.status==='completed').length;
+            
+            const ctx = document.getElementById('revenueChart');
+            if(window.chart) window.chart.destroy();
+            window.chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Hizmet', 'Parça Satışı'],
+                    datasets: [{
+                        label: 'Gelir',
+                        data: [
+                            db.jobs.reduce((a,b)=>a+(b.labor||0),0),
+                            db.jobs.reduce((a,b)=>a+(b.parts?.reduce((x,y)=>x+y.price,0)||0),0)
+                        ],
+                        backgroundColor: ['#f97316', '#3b82f6']
+                    }]
+                }
+            });
+        }
+
+        function renderKanban() {
+            ['pending', 'in-progress', 'ready', 'completed'].forEach(s => {
+                const col = document.getElementById('col-'+s);
+                col.innerHTML = `
+                    <h3 class="font-bold text-slate-700 mb-3 uppercase text-xs tracking-wider border-b pb-2">${getStatusName(s)} (${db.jobs.filter(j=>j.status===s).length})</h3>
+                    <div class="space-y-3">
+                        ${db.jobs.filter(j=>j.status===s).map(j=>`
+                            <div onclick="openDetail(${j.id})" class="bg-white p-3 rounded-xl border shadow-sm hover:shadow-md cursor-pointer transition">
+                                <div class="flex justify-between font-bold text-slate-800">
+                                    <span>${j.plate || '(Plaka Yok)'}</span>
+                                    <span class="text-orange-600">${(j.labor||0)+(j.parts?.reduce((a,b)=>a+b.price,0)||0)}₺</span>
+                                </div>
+                                <div class="text-xs text-slate-500 mt-1 truncate">${j.model || '(Model Yok)'}</div>
+                                <div class="text-xs text-slate-400 mt-2">${j.customer || '(Müşteri Yok)'}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            });
+        }
+        function getStatusName(s) { return {'pending':'Sırada', 'in-progress':'İşlemde', 'ready':'Hazır', 'completed':'Bitti'}[s] || s; }
+
+        function renderRequests() {
+            const container = document.getElementById('requests-container');
+            const list = db.jobs.filter(j => j.status === 'request');
+            if(list.length === 0) return container.innerHTML = '<p class="text-center text-slate-400 p-10">Bekleyen talep yok.</p>';
+            container.innerHTML = list.map(j => `
+                <div class="bg-white p-4 rounded-xl shadow-sm border flex justify-between items-center">
+                    <div><h4 class="font-bold">${j.model} (${j.plate})</h4><p class="text-sm text-slate-600">${j.customer}</p></div>
+                    <div class="flex gap-2">
+                        <button onclick="approveReq(${j.id})" class="bg-green-600 text-white px-4 py-2 rounded font-bold">Onayla</button>
+                        <button onclick="deleteJob(${j.id})" class="bg-red-100 text-red-600 px-4 py-2 rounded font-bold">Sil</button>
+                    </div>
+                </div>
+            `).join('');
+            updateBadge();
+        }
+        function approveReq(id) { db.jobs.find(x=>x.id===id).status='pending'; saveDB(); renderRequests(); showToast('Onaylandı!'); }
+
+        function renderInventory() {
+            const tbody = document.getElementById('inventory-table-body');
+            tbody.innerHTML = db.inventory.map(i => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 font-medium">${i.name}</td>
+                    <td class="p-3 font-bold text-center bg-slate-100 rounded">${i.stock}</td>
+                    <td class="p-3 font-bold text-right">${i.price} ₺</td>
+                    <td class="p-3 text-right">
+                        <button onclick="updateStock(${i.id}, 1)" class="text-green-600 font-bold bg-green-100 w-6 h-6 rounded">+</button>
+                        <button onclick="updateStock(${i.id}, -1)" class="text-red-600 font-bold bg-red-100 w-6 h-6 rounded ml-1">-</button>
+                        <button onclick="deleteStock(${i.id})" class="text-slate-400 ml-2"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        function updateStock(id, diff) {
+            const i = db.inventory.find(x=>x.id===id);
+            if(i.stock+diff < 0) return;
+            i.stock += diff; saveDB(); renderInventory();
+        }
+        function addStockItem() {
+            const name = prompt("Parça Adı:");
+            if(!name) return;
+            const price = prompt("Birim Fiyat:");
+            if(!price) return;
+            const stock = prompt("Stok Adedi:");
+            if(!stock) return;
+            db.inventory.push({id:Date.now(), name, price:Number(price), stock:Number(stock)});
+            saveDB(); renderInventory();
+        }
+        function deleteStock(id) { if(confirm('Silinecek?')) { db.inventory = db.inventory.filter(x=>x.id!==id); saveDB(); renderInventory(); } }
+
+        function updateBadge() {
+            const c = db.jobs.filter(j=>j.status==='request').length;
+            const b = document.getElementById('nav-badge');
+            if(c>0) b.classList.remove('hidden'); else b.classList.add('hidden');
+        }
+        function showToast(msg) {
+            const t = document.createElement('div');
+            t.className = 'bg-slate-800 text-white px-4 py-2 rounded shadow-lg text-sm animate-fade';
+            t.innerText = msg;
+            document.getElementById('toast-container').appendChild(t);
+            setTimeout(()=>t.remove(), 3000);
+        }
+        function newJobModal() {
+            const id = Date.now();
+            db.jobs.push({id, status:'pending', date:new Date().toLocaleDateString('tr-TR'), plate:'', model:'', customer:'', phone:'', issue:'', labor:0, parts:[]});
+            saveDB(); openDetail(id);
+        }
+
+        // --- YAZDIRMA (POPUP METHOD) ---
+        function printInvoicePopup(id) {
+            const j = db.jobs.find(x=>x.id===id);
+            const total = (j.labor||0) + (j.parts?.reduce((a,b)=>a+b.price,0)||0);
+            
+            const html = `
+                <html>
+                <head>
+                    <title>Servis Fişi</title>
+                    <style>
+                        body { font-family: sans-serif; padding: 20px; }
+                        .header { text-align: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        td, th { padding: 8px; border-bottom: 1px solid #ddd; }
+                        .text-right { text-align: right; }
+                        .total { font-weight: bold; font-size: 18px; margin-top: 20px; text-align: right; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h2>GÜVEN MOTOR</h2>
+                        <p>Yetkili Servis Fişi</p>
+                        <p>${new Date().toLocaleDateString('tr-TR')}</p>
+                    </div>
+                    <p><strong>Sayın:</strong> ${j.customer}</p>
+                    <p><strong>Araç:</strong> ${j.plate} / ${j.model}</p>
+                    <table>
+                        <tr><th>İşlem</th><th class="text-right">Tutar</th></tr>
+                        ${(j.parts||[]).map(p=>`<tr><td>${p.name}</td><td class="text-right">${p.price} ₺</td></tr>`).join('')}
+                        <tr><td>Servis İşçiliği</td><td class="text-right">${j.labor} ₺</td></tr>
+                    </table>
+                    <div class="total">TOPLAM: ${total} ₺</div>
+                    <div style="text-align: center; margin-top: 30px; font-size: 12px; color: #666;">
+                        Güvenli sürüşler dileriz.
+                    </div>
+                </body>
+                </html>
+            `;
+            const win = window.open('', '', 'height=600,width=800');
+            win.document.write(html);
+            win.document.close();
+            win.print();
+        }
+
+        // --- YEDEKLEME (JSON CHECK) ---
+        function downloadBackup() {
+            const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+            const node = document.createElement('a');
+            node.setAttribute("href", str);
+            node.setAttribute("download", "guven_motor_yedek.json");
+            document.body.appendChild(node);
+            node.click();
+            node.remove();
+        }
+        function restoreBackup(input) {
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if(imported && Array.isArray(imported.jobs)) {
+                        db = imported;
+                        saveDB();
+                        alert("Yedek başarıyla yüklendi!");
+                        location.reload();
+                    } else {
+                        alert("Geçersiz yedek dosyası!");
+                    }
+                } catch(err) { alert("Dosya okuma hatası!"); }
+            };
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
